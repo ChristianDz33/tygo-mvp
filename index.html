@@ -801,20 +801,20 @@
   ];
 
   // ── BEHAVIORAL LOGGING ───────────────────────────────────────────
-  function clickSeeWho() {
-    posthog.capture('clicked_see_who');
-    showScreen('gate');
-  }
+function clickSeeWho() {
+  if (window.posthog) posthog.capture('clicked_see_who');
+  showScreen('gate');
+}
 
-  function clickYesShowMe() {
-    posthog.capture('accepted_visibility');
-    showScreen('profiles');
-  }
+function clickYesShowMe() {
+  if (window.posthog) posthog.capture('accepted_visibility');
+  showScreen('profiles');
+}
 
-  function clickNotNow() {
-    posthog.capture('declined_visibility');
-    showScreen('results');
-  }
+function clickNotNow() {
+  if (window.posthog) posthog.capture('declined_visibility');
+  showScreen('results');
+}
 
   // ── STATE ─────────────────────────────────────────────────────────
   let selectedInterests = [];
