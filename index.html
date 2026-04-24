@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
+  <script>
+    ...
+    posthog.init('phc_mGgmhkDP9rLPEgy4g7cA9bEiSJzegYhUNX4PpdQi8UHT', {api_host: 'https://app.posthog.com'})
+  </script>
+
+  <meta charset="UTF-8">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TyGO — See where people like you are going</title>
@@ -796,17 +802,17 @@
 
   // ── BEHAVIORAL LOGGING ───────────────────────────────────────────
   function clickSeeWho() {
-    console.log('[TyGO] User clicked "See who" — curiosity triggered');
+    posthog.capture('clicked_see_who');
     showScreen('gate');
   }
 
   function clickYesShowMe() {
-    console.log('[TyGO] User clicked "Yes, show me" — willing to be visible');
+    posthog.capture('accepted_visibility');
     showScreen('profiles');
   }
 
   function clickNotNow() {
-    console.log('[TyGO] User clicked "Not now" — declined visibility');
+    posthog.capture('declined_visibility');
     showScreen('results');
   }
 
