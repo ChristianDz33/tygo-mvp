@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TyGO — See where people like you are going</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0D1B2A;
+    --navy2:  #0F2236;
+    --navy3:  #162840;
+    --teal:   #0D7A6E;
+    --teal-l: #0F9E8E;
+    --teal-g: #14C4B0;
+    --white:  #FFFFFF;
+    --gray:   #8899AA;
+    --gray-l: #C8D8E0;
+    --card:   #1A2E4A;
+    --red:    #E05555;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND RINGS ── */
+  .bg-rings {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .bg-rings::before, .bg-rings::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(13,122,110,0.15);
+  }
+  .bg-rings::before {
+    width: 700px; height: 700px;
+    top: -200px; right: -200px;
+  }
+  .bg-rings::after {
+    width: 500px; height: 500px;
+    bottom: -150px; left: -150px;
+  }
+  .glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(13,122,110,0.18) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding: 0 20px;
+    animation: fadeIn 0.5s ease;
+  }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HEADER ── */
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--teal-l);
+    padding: 28px 0 0;
+    letter-spacing: 1px;
+  }
+
+  /* ── LANDING ── */
+  #screen-landing {
+    justify-content: center;
+    text-align: center;
+    gap: 0;
+  }
+  .landing-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--teal-l);
+    letter-spacing: 2px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.1s forwards;
+  }
+  .landing-headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--white);
+    max-width: 640px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.25s forwards;
+  }
+  .landing-headline em {
+    font-style: italic;
+    color: var(--teal-g);
+  }
+  .landing-sub {
+    font-size: 16px;
+    color: var(--gray-l);
+    max-width: 420px;
+    line-height: 1.6;
+    margin-bottom: 52px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.4s forwards;
+  }
+  .btn-primary {
+    background: var(--teal);
+    color: var(--white);
+    border: none;
+    padding: 16px 40px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.55s forwards;
+  }
+  .btn-primary:hover {
+    background: var(--teal-l);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(13,122,110,0.4);
+  }
+  .landing-pulse {
+    margin-top: 48px;
+    font-size: 12px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease 0.7s forwards;
+  }
+  .landing-pulse span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--teal-g);
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* ── FORM ── */
+  #screen-form {
+    padding-top: 48px;
+    gap: 32px;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .form-header { text-align: center; }
+  .form-step {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--teal-g);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .form-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    color: var(--white);
+    line-height: 1.2;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--teal-g);
+    text-transform: uppercase;
+  }
+  .form-input {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--teal-l); }
+  .form-input::placeholder { color: var(--gray); }
+
+  /* interests grid */
+  .interests-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .interest-btn {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--gray-l);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .interest-btn:hover { border-color: var(--teal); color: var(--white); }
+  .interest-btn.selected {
+    background: rgba(13,122,110,0.18);
+    border-color: var(--teal-g);
+    color: var(--teal-g);
+  }
+  .interest-icon { font-size: 20px; }
+
+  /* ── RESULTS ── */
+  #screen-results {
+    padding-top: 48px;
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+    gap: 24px;
+  }
+  .results-header { text-align: center; }
+  .results-city {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+  .results-city span { color: var(--teal-g); font-style: italic; }
+  .results-dates {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 0;
+  }
+
+  /* Social signal box */
+  .signal-box {
+    background: rgba(13,122,110,0.12);
+    border: 1.5px solid rgba(20,196,176,0.35);
+    border-radius: 14px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .signal-avatars {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .signal-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--teal);
+    border: 2px solid var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--white);
+    margin-left: -8px;
+  }
+  .signal-avatar:first-child { margin-left: 0; }
+  .signal-text {
+    font-size: 14px;
+    color: var(--gray-l);
+    line-height: 1.5;
+  }
+  .signal-text strong { color: var(--white); }
+
+  /* Place cards */
+  .places-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--teal-g);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .places-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .place-card {
+    background: var(--card);
+    border: 1px solid rgba(13,122,110,0.2);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .place-card:hover {
+    border-color: var(--teal);
+    transform: translateX(4px);
+  }
+  .place-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(13,122,110,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .place-info { flex: 1; }
+  .place-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 3px;
+  }
+  .place-meta {
+    font-size: 12px;
+    color: var(--gray);
+  }
+  .place-tag {
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(20,196,176,0.12);
+    color: var(--teal-g);
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* CTA buttons */
+  .cta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .btn-see-who {
+    background: var(--teal);
+    color: var(--white);
+    border: none;
+    padding: 18px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .btn-see-who:hover {
+    background: var(--teal-l);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(13,122,110,0.4);
+  }
+  .btn-private {
+    background: transparent;
+    color: var(--gray);
+    border: 1.5px solid rgba(136,153,170,0.25);
+    padding: 16px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .btn-private:hover {
+    color: var(--gray-l);
+    border-color: var(--gray);
+  }
+  .results-pb { padding-bottom: 48px; }
+
+  /* ── PROFILES ── */
+  #screen-profiles {
+    padding-top: 48px;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+    gap: 20px;
+    padding-bottom: 48px;
+  }
+  .profiles-header { text-align: center; }
+  .profiles-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+  .profiles-title span { color: var(--teal-g); font-style: italic; }
+  .profiles-sub {
+    font-size: 14px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+  .profile-card {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 18px;
+    padding: 22px;
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: slideUp 0.4s ease both;
+  }
+  .profile-card:nth-child(2) { animation-delay: 0.1s; }
+  .profile-card:nth-child(3) { animation-delay: 0.2s; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .profile-card:hover {
+    border-color: var(--teal-g);
+    transform: translateY(-2px);
+  }
+  .profile-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-l));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+  .profile-info { flex: 1; }
+  .profile-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+  .profile-bio {
+    font-size: 13px;
+    color: var(--gray-l);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .profile-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .profile-tag {
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(13,122,110,0.15);
+    color: var(--teal-g);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .profile-conn {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .conn-dot {
+    width: 6px; height: 6px;
+    background: var(--teal-g);
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .waitlist-box {
+    background: rgba(13,122,110,0.1);
+    border: 1.5px solid rgba(13,122,110,0.3);
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    width: 100%;
+  }
+  .waitlist-box h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+  .waitlist-box p {
+    font-size: 13px;
+    color: var(--gray-l);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .waitlist-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .waitlist-input {
+    flex: 1;
+    background: var(--navy2);
+    border: 1.5px solid rgba(13,122,110,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+  }
+  .waitlist-input:focus { border-color: var(--teal-l); }
+  .waitlist-input::placeholder { color: var(--gray); }
+  .btn-join {
+    background: var(--teal);
+    color: var(--white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-join:hover { background: var(--teal-l); }
+  .btn-join.success { background: #1E8449; }
+  .btn-back {
+    background: transparent;
+    color: var(--gray);
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+  .btn-back:hover { color: var(--white); }
+
+  /* ── PRIVATE ── */
+  #screen-private {
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .private-icon { font-size: 48px; }
+  .private-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--white);
+  }
+  .private-sub {
+    font-size: 15px;
+    color: var(--gray-l);
+    line-height: 1.6;
+  }
+  .private-note {
+    font-size: 12px;
+    color: var(--gray);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-rings"></div>
+<div class="glow"></div>
+
+<!-- ── SCREEN: LANDING ── -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-logo">TyGO</div>
+  <h1 class="landing-headline">
+    See where people <em>like you</em><br>are going — before you get there.
+  </h1>
+  <p class="landing-sub">
+    Discover who's headed to the same city, the same events, the same experiences — and connect before you arrive.
+  </p>
+  <button class="btn-primary" onclick="showScreen('form')">Where are you going? →</button>
+  <p class="landing-pulse"><span></span>People are planning trips right now</p>
+</div>
+
+<!-- ── SCREEN: FORM ── -->
+<div id="screen-form" class="screen">
+  <div class="form-header">
+    <div class="form-step">LET'S FIND YOUR PEOPLE</div>
+    <h2 class="form-title">Tell us about your trip</h2>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Where are you going?</label>
+    <input id="input-city" class="form-input" type="text" placeholder="Miami, Barcelona, Tokyo…" />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">When?</label>
+    <input id="input-when" class="form-input" type="text" placeholder="June 15–18, next month, this summer…" />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">What are you into?</label>
+    <div class="interests-grid">
+      <button class="interest-btn" data-interest="Nightlife" onclick="toggleInterest(this)">
+        <span class="interest-icon">🍸</span> Nightlife
+      </button>
+      <button class="interest-btn" data-interest="Food" onclick="toggleInterest(this)">
+        <span class="interest-icon">🍽️</span> Food
+      </button>
+      <button class="interest-btn" data-interest="Fitness" onclick="toggleInterest(this)">
+        <span class="interest-icon">🏃</span> Fitness
+      </button>
+      <button class="interest-btn" data-interest="Networking" onclick="toggleInterest(this)">
+        <span class="interest-icon">🤝</span> Networking
+      </button>
+      <button class="interest-btn" data-interest="Music" onclick="toggleInterest(this)">
+        <span class="interest-icon">🎵</span> Music / Events
+      </button>
+      <button class="interest-btn" data-interest="Sports" onclick="toggleInterest(this)">
+        <span class="interest-icon">⚽</span> Sports
+      </button>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="submitForm()" style="width:100%;opacity:1;animation:none;">
+    Show me who's going →
+  </button>
+  <button class="btn-back" onclick="showScreen('landing')">← Back</button>
+</div>
+
+<!-- ── SCREEN: RESULTS ── -->
+<div id="screen-results" class="screen">
+  <div class="results-header">
+    <h2 class="results-city">Heading to <span id="result-city">Miami</span></h2>
+    <p class="results-dates" id="result-dates">June 15–18</p>
+  </div>
+
+  <!-- Social signal -->
+  <div class="signal-box">
+    <div class="signal-avatars">
+      <div class="signal-avatar">A</div>
+      <div class="signal-avatar">M</div>
+      <div class="signal-avatar">J</div>
+    </div>
+    <p class="signal-text" id="signal-text">
+      <strong>A few people with similar interests</strong> may be going to <span id="signal-city">Miami</span>
+    </p>
+  </div>
+
+  <!-- Places -->
+  <div class="places-label">PLACES YOU'LL LOVE</div>
+  <div class="places-list" id="places-list"></div>
+
+  <!-- CTAs -->
+  <div class="cta-row results-pb">
+    <button class="btn-see-who" onclick="clickSeeWho()">See who →</button>
+    <button class="btn-private" onclick="showScreen('private')">Stay private</button>
+  </div>
+</div>
+
+<!-- ── SCREEN: VISIBILITY GATE ── -->
+<div id="screen-gate" class="screen">
+  <div class="private-icon">👥</div>
+  <h2 class="private-title" style="text-align:center;max-width:380px;line-height:1.25;">To see who they are, they'll be able to see you too</h2>
+  <p class="private-sub" style="text-align:center;max-width:340px;">This helps make connections more meaningful — everyone opts in.</p>
+  <button class="btn-primary" onclick="clickYesShowMe()" style="opacity:1;animation:none;width:100%;max-width:340px;">Yes, show me →</button>
+  <button class="btn-private" onclick="clickNotNow()" style="width:100%;max-width:340px;">Not now</button>
+</div>
+
+<!-- ── SCREEN: PROFILES ── -->
+<div id="screen-profiles" class="screen">
+  <div class="profiles-header">
+    <h2 class="profiles-title">Also heading to <span id="profile-city">Miami</span></h2>
+    <p class="profiles-sub">People with similar interests who are going around the same time.</p>
+  </div>
+
+  <div id="profiles-list"></div>
+
+  <!-- Waitlist CTA -->
+  <div class="waitlist-box">
+    <h3>Want to make sure you don't miss them?</h3>
+    <p>TyGO is launching in Miami during the FIFA World Cup. Join the waitlist to be first in.</p>
+    <div class="waitlist-input-row">
+      <input id="waitlist-email" class="waitlist-input" type="email" placeholder="your@email.com" />
+      <button class="btn-join" id="btn-join" onclick="joinWaitlist()">Join</button>
+    </div>
+  </div>
+
+  <button class="btn-back" onclick="showScreen('results')">← Back</button>
+</div>
+
+<!-- ── SCREEN: PRIVATE ── -->
+<div id="screen-private" class="screen">
+  <div class="private-icon">🔒</div>
+  <h2 class="private-title">You're invisible.</h2>
+  <p class="private-sub">You can still explore — but no one can see you're going. Change your mind anytime.</p>
+  <button class="btn-primary" onclick="showScreen('results')" style="opacity:1;animation:none;">← Back to results</button>
+  <p class="private-note">TyGO never shares your location without your permission.</p>
+</div>
+
+<script>
+  // ── DATA ─────────────────────────────────────────────────────────
+  const PLACES = {
+    nightlife: [
+      { name: "LIV Nightclub",      meta: "South Beach · Opens 11pm",   tag: "🔥 Trending",  icon: "🍸" },
+      { name: "E11even Miami",      meta: "Downtown · 24hr venue",       tag: "📍 0.4mi",     icon: "🎵" },
+      { name: "Story Nightclub",    meta: "South Beach · Fri & Sat",     tag: "⚡ Hot tonight", icon: "🌙" },
+    ],
+    food: [
+      { name: "Zuma Miami",         meta: "Brickell · Japanese Robata",  tag: "⭐ Top pick",  icon: "🍽️" },
+      { name: "Stubborn Seed",      meta: "South Beach · Modern American", tag: "📍 0.6mi",   icon: "🌿" },
+      { name: "Cote Miami",         meta: "Wynwood · Korean Steakhouse", tag: "🔥 Trending",  icon: "🥩" },
+    ],
+    fitness: [
+      { name: "Barry's Miami",      meta: "Brickell · HIIT classes daily", tag: "⚡ 6am class", icon: "🏃" },
+      { name: "South Pointe Park",  meta: "South Beach · Outdoor runs",  tag: "📍 1.2mi",    icon: "🌅" },
+      { name: "F45 Brickell",       meta: "Brickell · Team training",    tag: "⭐ Top pick",  icon: "💪" },
+    ],
+    networking: [
+      { name: "Venture Café Miami", meta: "Wynwood · Thu evenings",      tag: "🤝 This week", icon: "🚀" },
+      { name: "LAB Miami",          meta: "Wynwood · Founder community",  tag: "📍 0.8mi",    icon: "💡" },
+      { name: "CitizenM Brickell",  meta: "Brickell · Lobby bar",        tag: "⚡ Hot spot",  icon: "🏢" },
+    ],
+    music: [
+      { name: "Hard Rock Stadium",  meta: "Miami Gardens · World Cup",   tag: "🔥 June 15+",  icon: "🎵" },
+      { name: "Ball & Chain",       meta: "Little Havana · Live music",  tag: "⭐ Top pick",  icon: "🎺" },
+      { name: "Wynwood Yard",       meta: "Wynwood · Outdoor events",    tag: "📍 0.5mi",    icon: "🎶" },
+    ],
+    sports: [
+      { name: "Hard Rock Stadium",  meta: "Miami Gardens · FIFA World Cup", tag: "⚽ June 15+", icon: "🏟️" },
+      { name: "Bayfront Park",      meta: "Downtown · Fan zones",        tag: "🔥 Trending",  icon: "🏃" },
+      { name: "TopGolf Miami",      meta: "Doral · Golf + dining",       tag: "📍 2.1mi",    icon: "⛳" },
+    ],
+  };
+
+  const PROFILES = [
+    {
+      initial: "A",
+      name: "Alex R.",
+      bio: "Marketing director based in NYC. Into rooftop bars, great food, and making things happen in new cities.",
+      tags: ["Nightlife", "Food"],
+      conn: "Going June 14–19 · Similar interests",
+    },
+    {
+      initial: "M",
+      name: "Maya K.",
+      bio: "Freelance designer from London. Travels for culture, coffee, and the occasional boxing class.",
+      tags: ["Fitness", "Food"],
+      conn: "Going June 15–20 · Same trip window",
+    },
+    {
+      initial: "J",
+      name: "James T.",
+      bio: "Startup founder in SF. Heading to Miami for the World Cup and always down to connect with other builders.",
+      tags: ["Networking", "Nightlife"],
+      conn: "Going June 15–18 · Exact dates match",
+    },
+  ];
+
+  // ── BEHAVIORAL LOGGING ───────────────────────────────────────────
+  function clickSeeWho() {
+    console.log('[TyGO] User clicked "See who" — curiosity triggered');
+    showScreen('gate');
+  }
+
+  function clickYesShowMe() {
+    console.log('[TyGO] User clicked "Yes, show me" — willing to be visible');
+    showScreen('profiles');
+  }
+
+  function clickNotNow() {
+    console.log('[TyGO] User clicked "Not now" — declined visibility');
+    showScreen('results');
+  }
+
+  // ── STATE ─────────────────────────────────────────────────────────
+  let selectedInterests = [];
+
+  // ── FUNCTIONS ─────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function toggleInterest(btn) {
+    btn.classList.toggle('selected');
+    const interest = btn.dataset.interest.toLowerCase();
+    if (selectedInterests.includes(interest)) {
+      selectedInterests = selectedInterests.filter(i => i !== interest);
+    } else {
+      selectedInterests.push(interest);
+    }
+  }
+
+  function submitForm() {
+    const city = document.getElementById('input-city').value.trim() || 'Miami';
+    const when = document.getElementById('input-when').value.trim() || 'your trip';
+
+    // Update result screens
+    document.getElementById('result-city').textContent = city;
+    document.getElementById('result-dates').textContent = when;
+    document.getElementById('signal-city').textContent = city;
+    document.getElementById('profile-city').textContent = city;
+
+    // Build places list
+    const placesList = document.getElementById('places-list');
+    placesList.innerHTML = '';
+    let places = [];
+
+    if (selectedInterests.length === 0) {
+      // Default mix
+      places = [PLACES.nightlife[0], PLACES.food[0], PLACES.fitness[0]];
+    } else {
+      selectedInterests.forEach(interest => {
+        if (PLACES[interest]) places.push(PLACES[interest][0]);
+      });
+      // Pad to at least 3
+      if (places.length < 3) {
+        const fallback = PLACES[selectedInterests[0] || 'food'];
+        fallback.slice(0, 3 - places.length).forEach(p => {
+          if (!places.includes(p)) places.push(p);
+        });
+      }
+    }
+
+    places.slice(0, 4).forEach(p => {
+      placesList.innerHTML += `
+        <div class="place-card">
+          <div class="place-icon">${p.icon}</div>
+          <div class="place-info">
+            <div class="place-name">${p.name}</div>
+            <div class="place-meta">${p.meta}</div>
+          </div>
+          <span class="place-tag">${p.tag}</span>
+        </div>`;
+    });
+
+    // Build profiles
+    const profilesList = document.getElementById('profiles-list');
+    profilesList.innerHTML = '';
+    PROFILES.forEach(p => {
+      profilesList.innerHTML += `
+        <div class="profile-card">
+          <div class="profile-avatar">${p.initial}</div>
+          <div class="profile-info">
+            <div class="profile-name">${p.name}</div>
+            <div class="profile-bio">${p.bio}</div>
+            <div class="profile-tags">
+              ${p.tags.map(t => `<span class="profile-tag">${t}</span>`).join('')}
+            </div>
+            <div class="profile-conn"><span class="conn-dot"></span>${p.conn}</div>
+          </div>
+        </div>`;
+    });
+
+    showScreen('results');
+  }
+
+  function joinWaitlist() {
+    const email = document.getElementById('waitlist-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('waitlist-email').style.borderColor = '#E05555';
+      setTimeout(() => {
+        document.getElementById('waitlist-email').style.borderColor = '';
+      }, 1500);
+      return;
+    }
+    const btn = document.getElementById('btn-join');
+    btn.textContent = '✓ Done';
+    btn.classList.add('success');
+    btn.disabled = true;
+    document.getElementById('waitlist-email').value = '';
+  }
+</script>
+</body>
+</html>
