@@ -802,18 +802,36 @@
 
   // ── BEHAVIORAL LOGGING ───────────────────────────────────────────
 function clickSeeWho() {
-  if (window.posthog) posthog.capture('clicked_see_who');
   showScreen('gate');
+  try {
+    if (window.posthog && posthog.capture) {
+      posthog.capture('clicked_see_who');
+    }
+  } catch (e) {
+    console.log('PostHog error:', e);
+  }
 }
 
 function clickYesShowMe() {
-  if (window.posthog) posthog.capture('accepted_visibility');
   showScreen('profiles');
+  try {
+    if (window.posthog && posthog.capture) {
+      posthog.capture('accepted_visibility');
+    }
+  } catch (e) {
+    console.log('PostHog error:', e);
+  }
 }
 
 function clickNotNow() {
-  if (window.posthog) posthog.capture('declined_visibility');
   showScreen('results');
+  try {
+    if (window.posthog && posthog.capture) {
+      posthog.capture('declined_visibility');
+    }
+  } catch (e) {
+    console.log('PostHog error:', e);
+  }
 }
 
   // ── STATE ─────────────────────────────────────────────────────────
