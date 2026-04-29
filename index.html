@@ -1,14 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
-<script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Ai Ri init Vi Yi Rr zi Gi Zi capture calculateEventProperties en register register_once register_for_session unregister unregister_for_session sn getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync an identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty rn Ki createPersonProfile setInternalOrTestUser nn $i hn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Xi debug Mr tn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-    posthog.init('phc_mGgmhkDP9rLPEgy4g7cA9bEiSJzegYhUNX4PpdQi8UHT', {
-        api_host: 'https://us.i.posthog.com',
-        defaults: '2026-01-30',
-        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
-    })
-</script>
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TyGO — See where people like you are going</title>
@@ -644,6 +636,24 @@
   </div>
 
   <div class="form-group">
+    <label class="form-label">What kind of trip?</label>
+    <div class="interests-grid">
+      <button class="interest-btn" data-trip="leisure" onclick="toggleTrip(this)">
+        <span class="interest-icon">🏖️</span> Leisure
+      </button>
+      <button class="interest-btn" data-trip="business" onclick="toggleTrip(this)">
+        <span class="interest-icon">💼</span> Business
+      </button>
+      <button class="interest-btn" data-trip="event" onclick="toggleTrip(this)">
+        <span class="interest-icon">🎉</span> Event / Concert
+      </button>
+      <button class="interest-btn" data-trip="sports" onclick="toggleTrip(this)">
+        <span class="interest-icon">⚽</span> Sports / World Cup
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
     <label class="form-label">What are you into?</label>
     <div class="interests-grid">
       <button class="interest-btn" data-interest="Nightlife" onclick="toggleInterest(this)">
@@ -688,7 +698,7 @@
       <div class="signal-avatar">J</div>
     </div>
     <p class="signal-text" id="signal-text">
-      <strong>A few people with similar interests</strong> may be going to <span id="signal-city">Miami</span>
+      <strong>3 relevant people</strong> may also be in <span id="signal-city">Miami</span>
     </p>
   </div>
 
@@ -698,7 +708,7 @@
 
   <!-- CTAs -->
   <div class="cta-row results-pb">
-    <button class="btn-see-who" onclick="clickSeeWho()">See who →</button>
+    <button class="btn-see-who" onclick="clickSeeWho()">See who's relevant →</button>
     <button class="btn-private" onclick="showScreen('private')">Stay private</button>
   </div>
 </div>
@@ -706,8 +716,8 @@
 <!-- ── SCREEN: VISIBILITY GATE ── -->
 <div id="screen-gate" class="screen">
   <div class="private-icon">👥</div>
-  <h2 class="private-title" style="text-align:center;max-width:380px;line-height:1.25;">To see who they are, they'll be able to see you too</h2>
-  <p class="private-sub" style="text-align:center;max-width:340px;">This helps make connections more meaningful — everyone opts in.</p>
+  <h2 class="private-title" style="text-align:center;max-width:380px;line-height:1.25;">Want better matches?</h2>
+  <p class="private-sub" style="text-align:center;max-width:340px;">Let others see you're going too. It makes connections more meaningful — everyone opts in.</p>
   <button class="btn-primary" onclick="clickYesShowMe()" style="opacity:1;animation:none;width:100%;max-width:340px;">Yes, show me →</button>
   <button class="btn-private" onclick="clickNotNow()" style="width:100%;max-width:340px;">Not now</button>
 </div>
@@ -731,6 +741,17 @@
     </div>
   </div>
 
+  <!-- Final question -->
+  <div class="waitlist-box" style="margin-top:0;">
+    <h3 style="font-size:16px;margin-bottom:12px;">Where would you use TyGO most?</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;" id="use-case-btns">
+      <button class="interest-btn" style="width:100%;border-radius:10px;" onclick="selectUseCase(this,'travel')">✈️  &nbsp;Traveling to a new city</button>
+      <button class="interest-btn" style="width:100%;border-radius:10px;" onclick="selectUseCase(this,'events')">🎉  &nbsp;At events or concerts</button>
+      <button class="interest-btn" style="width:100%;border-radius:10px;" onclick="selectUseCase(this,'local')">📍  &nbsp;In my own city</button>
+      <button class="interest-btn" style="width:100%;border-radius:10px;" onclick="selectUseCase(this,'business')">💼  &nbsp;On business trips</button>
+    </div>
+  </div>
+
   <button class="btn-back" onclick="showScreen('results')">← Back</button>
 </div>
 
@@ -744,6 +765,10 @@
 </div>
 
 <script>
+  // ── POSTHOG ──────────────────────────────────────────────────────
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_mGgmhkDP9rLPEgy4g7cA9bEiSJzegYhUNX4PpdQi8UHT',{api_host:'https://app.posthog.com'});
+
   // ── DATA ─────────────────────────────────────────────────────────
   const PLACES = {
     nightlife: [
@@ -803,41 +828,41 @@
   ];
 
   // ── BEHAVIORAL LOGGING ───────────────────────────────────────────
-function clickSeeWho() {
-  showScreen('gate');
-  try {
-    if (window.posthog && posthog.capture) {
-      posthog.capture('clicked_see_who');
-    }
-  } catch (e) {
-    console.log('PostHog error:', e);
+  function clickSeeWho() {
+    console.log('[TyGO] User clicked "See who\'s relevant" — curiosity triggered');
+    posthog.capture('clicked_see_who_relevant');
+    showScreen('gate');
   }
-}
 
-function clickYesShowMe() {
-  showScreen('profiles');
-  try {
-    if (window.posthog && posthog.capture) {
-      posthog.capture('accepted_visibility');
-    }
-  } catch (e) {
-    console.log('PostHog error:', e);
+  function clickYesShowMe() {
+    console.log('[TyGO] User clicked "Yes, show me" — willing to be visible');
+    posthog.capture('clicked_yes_show_me');
+    showScreen('profiles');
   }
-}
 
-function clickNotNow() {
-  showScreen('results');
-  try {
-    if (window.posthog && posthog.capture) {
-      posthog.capture('declined_visibility');
-    }
-  } catch (e) {
-    console.log('PostHog error:', e);
+  function clickNotNow() {
+    console.log('[TyGO] User clicked "Not now" — declined visibility');
+    posthog.capture('clicked_not_now');
+    showScreen('results');
   }
-}
+
+  function selectUseCase(btn, value) {
+    document.querySelectorAll('#use-case-btns .interest-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    console.log('[TyGO] Use case selected:', value);
+    posthog.capture('selected_use_case', { use_case: value });
+  }
 
   // ── STATE ─────────────────────────────────────────────────────────
   let selectedInterests = [];
+  let selectedTrip = null;
+
+  // ── FUNCTIONS ─────────────────────────────────────────────────────
+  function toggleTrip(btn) {
+    document.querySelectorAll('[data-trip]').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedTrip = btn.dataset.trip;
+  }
 
   // ── FUNCTIONS ─────────────────────────────────────────────────────
   function showScreen(id) {
@@ -859,6 +884,8 @@ function clickNotNow() {
   function submitForm() {
     const city = document.getElementById('input-city').value.trim() || 'Miami';
     const when = document.getElementById('input-when').value.trim() || 'your trip';
+
+    posthog.capture('submitted_form', { city, when, trip_type: selectedTrip, interests: selectedInterests });
 
     // Update result screens
     document.getElementById('result-city').textContent = city;
