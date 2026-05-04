@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TyGO — See who's already there</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0D1B2A;
+    --navy2:  #0F2236;
+    --navy3:  #162840;
+    --teal:   #0D7A6E;
+    --teal-l: #0F9E8E;
+    --teal-g: #14C4B0;
+    --white:  #FFFFFF;
+    --gray:   #8899AA;
+    --gray-l: #C8D8E0;
+    --card:   #1A2E4A;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-rings {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .bg-rings::before, .bg-rings::after {
+    content: ''; position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(13,122,110,0.15);
+  }
+  .bg-rings::before { width: 700px; height: 700px; top: -200px; right: -200px; }
+  .bg-rings::after  { width: 500px; height: 500px; bottom: -150px; left: -150px; }
+  .glow {
+    position: fixed; width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(13,122,110,0.18) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none; position: relative; z-index: 1;
+    min-height: 100vh; padding: 0 20px;
+    animation: fadeIn 0.45s ease;
+  }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.7); }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SHARED COMPONENTS ── */
+  .screen-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--teal-l);
+    letter-spacing: 1px; padding-top: 36px; margin-bottom: 0;
+  }
+  .eyebrow {
+    font-size: 11px; letter-spacing: 2px;
+    color: var(--teal-g); font-weight: 600;
+    text-transform: uppercase;
+  }
+  .btn-primary {
+    background: var(--teal); color: var(--white);
+    border: none; padding: 16px 40px;
+    border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: all 0.2s ease; width: 100%;
+  }
+  .btn-primary:hover {
+    background: var(--teal-l);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(13,122,110,0.4);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--gray);
+    border: 1.5px solid rgba(136,153,170,0.25);
+    padding: 15px 40px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer;
+    transition: all 0.2s; width: 100%;
+  }
+  .btn-ghost:hover { color: var(--gray-l); border-color: var(--gray); }
+  .btn-back {
+    background: transparent; color: var(--gray);
+    border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; cursor: pointer; padding: 6px 0;
+    display: flex; align-items: center; gap: 5px;
+    transition: color 0.2s;
+  }
+  .btn-back:hover { color: var(--white); }
+  .signal-box {
+    background: rgba(13,122,110,0.12);
+    border: 1.5px solid rgba(20,196,176,0.3);
+    border-radius: 14px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 14px;
+    width: 100%;
+  }
+  .signal-avatars { display: flex; flex-shrink: 0; }
+  .signal-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--teal); border: 2px solid var(--navy);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--white);
+    margin-left: -8px;
+  }
+  .signal-avatar:first-child { margin-left: 0; }
+  .signal-text { font-size: 14px; color: var(--gray-l); line-height: 1.5; }
+  .signal-text strong { color: var(--white); }
+
+  /* ── 1. LANDING ── */
+  #screen-landing {
+    justify-content: center; text-align: center; gap: 0;
+  }
+  .landing-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px; color: var(--teal-l);
+    letter-spacing: 2px; margin-bottom: 44px;
+    opacity: 0; animation: fadeIn 0.6s ease 0.1s forwards;
+  }
+  .landing-headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(34px, 6vw, 60px); font-weight: 400;
+    line-height: 1.1; color: var(--white);
+    max-width: 600px; margin-bottom: 18px;
+    opacity: 0; animation: fadeIn 0.6s ease 0.25s forwards;
+  }
+  .landing-sub {
+    font-size: 16px; color: var(--gray-l);
+    max-width: 380px; line-height: 1.6; margin-bottom: 44px;
+    opacity: 0; animation: fadeIn 0.6s ease 0.4s forwards;
+  }
+  .landing-cta-wrap {
+    max-width: 320px; width: 100%; margin-bottom: 36px;
+    opacity: 0; animation: fadeIn 0.6s ease 0.55s forwards;
+  }
+  .landing-pulse {
+    font-size: 12px; color: var(--gray); letter-spacing: 1px;
+    opacity: 0; animation: fadeIn 0.6s ease 0.7s forwards;
+  }
+  .landing-pulse span {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--teal-g); border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+    animation: pulse 2s infinite;
+  }
+
+  /* ── 2. INSTANT RESULTS ── */
+  #screen-results {
+    padding-top: 52px; max-width: 520px;
+    margin: 0 auto; width: 100%; gap: 22px;
+    padding-bottom: 48px;
+  }
+  .results-kicker {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(26px, 5vw, 34px); color: var(--white);
+    line-height: 1.2; text-align: center;
+  }
+  .results-kicker em { font-style: italic; color: var(--teal-g); }
+  .signals-list {
+    display: flex; flex-direction: column; gap: 10px; width: 100%;
+  }
+  .signal-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: var(--gray-l);
+  }
+  .signal-row span { font-size: 18px; }
+
+  /* ── 3. INPUT ── */
+  #screen-input {
+    padding-top: 52px; gap: 28px;
+    max-width: 480px; margin: 0 auto; width: 100%;
+    padding-bottom: 48px;
+  }
+  .input-header { text-align: center; }
+  .input-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px; color: var(--white);
+    line-height: 1.2; margin: 10px 0 6px;
+  }
+  .input-sub { font-size: 14px; color: var(--gray); line-height: 1.5; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .form-label {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 1.5px; color: var(--teal-g); text-transform: uppercase;
+  }
+  .form-input {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.3);
+    border-radius: 12px; padding: 16px 20px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px; outline: none; width: 100%;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--teal-l); }
+  .form-input::placeholder { color: var(--gray); }
+  .vibe-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
+  }
+  .vibe-btn {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 12px; padding: 14px 16px;
+    color: var(--gray-l);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .vibe-btn:hover { border-color: var(--teal); color: var(--white); }
+  .vibe-btn.selected {
+    background: rgba(13,122,110,0.18);
+    border-color: var(--teal-g); color: var(--teal-g);
+  }
+  .vibe-btn.wide { grid-column: span 2; }
+
+  /* ── 4. VISIBILITY GATE ── */
+  #screen-gate {
+    justify-content: center; text-align: center; gap: 20px;
+    max-width: 400px; margin: 0 auto; padding: 0 20px;
+  }
+  .gate-icon { font-size: 52px; }
+  .gate-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px; color: var(--white); line-height: 1.2;
+  }
+  .gate-sub {
+    font-size: 15px; color: var(--gray-l); line-height: 1.6; max-width: 320px;
+  }
+  .gate-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 340px; }
+
+  /* ── 5. REVEALED MATCHES ── */
+  #screen-revealed {
+    padding-top: 52px; max-width: 520px;
+    margin: 0 auto; width: 100%; gap: 18px;
+    padding-bottom: 48px;
+  }
+  .revealed-header { text-align: center; }
+  .revealed-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px; color: var(--white); margin-bottom: 6px;
+  }
+  .revealed-sub { font-size: 14px; color: var(--gray); line-height: 1.5; }
+  .profile-card {
+    background: var(--card);
+    border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 18px; padding: 20px 22px;
+    display: flex; gap: 16px; width: 100%;
+    animation: slideUp 0.4s ease both;
+  }
+  .profile-card:nth-child(2) { animation-delay: 0.08s; }
+  .profile-card:nth-child(3) { animation-delay: 0.16s; }
+  .profile-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-l));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: var(--white); flex-shrink: 0;
+  }
+  .profile-info { flex: 1; }
+  .profile-name {
+    font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 4px;
+  }
+  .profile-bio {
+    font-size: 13px; color: var(--gray-l); line-height: 1.5; margin-bottom: 10px;
+  }
+  .profile-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .profile-tag {
+    font-size: 11px; font-weight: 600;
+    background: rgba(13,122,110,0.15);
+    color: var(--teal-g); padding: 4px 10px; border-radius: 20px;
+  }
+  .revealed-cta-block {
+    width: 100%; text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 20px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .revealed-note {
+    font-size: 14px; color: var(--gray); line-height: 1.55; font-style: italic;
+  }
+
+  /* ── 6. THANK YOU ── */
+  #screen-thankyou {
+    justify-content: center; text-align: center; gap: 20px;
+    max-width: 420px; margin: 0 auto; padding: 0 20px;
+  }
+  .ty-icon { font-size: 52px; }
+  .ty-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px; color: var(--white); line-height: 1.25;
+  }
+  .ty-sub { font-size: 15px; color: var(--gray-l); line-height: 1.6; }
+  .ty-note { font-size: 13px; color: var(--gray); font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="bg-rings"></div>
+<div class="glow"></div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 1 — LANDING
+════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-logo">TyGO</div>
+  <h1 class="landing-headline">Who from your world may already be there?</h1>
+  <p class="landing-sub">Find out before you miss the moment.</p>
+  <div class="landing-cta-wrap">
+    <button class="btn-primary" onclick="clickCheckOverlap()">Check your overlap →</button>
+  </div>
+  <p class="landing-pulse"><span></span>People are planning trips right now</p>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 2 — INSTANT RESULTS
+════════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="screen-logo">TyGO</div>
+
+  <div style="height:36px;"></div>
+  <h2 class="results-kicker"><em>3 relevant people</em><br>may be in Miami right now</h2>
+
+  <div class="signal-box">
+    <div class="signal-avatars">
+      <div class="signal-avatar">A</div>
+      <div class="signal-avatar">M</div>
+      <div class="signal-avatar">J</div>
+    </div>
+    <p class="signal-text"><strong>Based on your extended network</strong></p>
+  </div>
+
+  <div class="signals-list">
+    <div class="signal-row"><span>🔗</span> Shared interests</div>
+    <div class="signal-row"><span>👥</span> Mutual connections</div>
+    <div class="signal-row"><span>🗓</span> Similar plans</div>
+  </div>
+
+  <button class="btn-primary" onclick="clickSeeRelevant()">See who's relevant →</button>
+  <button class="btn-back" onclick="showScreen('landing')">← Back</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 3 — INPUT
+════════════════════════════════════════ -->
+<div id="screen-input" class="screen">
+  <div class="screen-logo">TyGO</div>
+
+  <div style="height:28px;"></div>
+  <div class="input-header">
+    <div class="eyebrow">Almost there</div>
+    <h2 class="input-title">Tell us where you're headed</h2>
+    <p class="input-sub">So we can show you the right people.</p>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">City</label>
+    <input id="v3-city" class="form-input" type="text" placeholder="Miami, Barcelona, Tokyo…" />
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Vibe</label>
+    <div class="vibe-grid">
+      <button class="vibe-btn" data-vibe="going_out"   onclick="toggleVibe(this)">🍸 Going out</button>
+      <button class="vibe-btn" data-vibe="work"        onclick="toggleVibe(this)">💼 Work</button>
+      <button class="vibe-btn" data-vibe="solo"        onclick="toggleVibe(this)">🧳 Solo</button>
+      <button class="vibe-btn" data-vibe="social"      onclick="toggleVibe(this)">👋 Social</button>
+      <button class="vibe-btn wide" data-vibe="networking" onclick="toggleVibe(this)">🤝 Networking</button>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="submitInput()">Unlock my matches →</button>
+  <button class="btn-back" onclick="showScreen('results')">← Back</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 4 — VISIBILITY GATE
+════════════════════════════════════════ -->
+<div id="screen-gate" class="screen">
+  <div class="gate-icon">👥</div>
+  <h2 class="gate-title">Turn on visibility to unlock your matches</h2>
+  <p class="gate-sub">Only relevant people will be able to see you.</p>
+  <div class="gate-btns">
+    <button class="btn-primary" onclick="clickAcceptVisibility()">Turn on visibility →</button>
+    <button class="btn-ghost"   onclick="clickDeclineVisibility()">Not now</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 5 — REVEALED MATCHES
+════════════════════════════════════════ -->
+<div id="screen-revealed" class="screen">
+  <div class="screen-logo">TyGO</div>
+
+  <div style="height:28px;"></div>
+  <div class="revealed-header">
+    <h2 class="revealed-title">People you'd actually want to meet</h2>
+    <p class="revealed-sub">Based on your location, timing, and vibe</p>
+  </div>
+
+  <!-- Card 1 -->
+  <div class="profile-card">
+    <div class="profile-avatar">A</div>
+    <div class="profile-info">
+      <div class="profile-name">Alex</div>
+      <div class="profile-bio">In Miami for a few days of meetings.</div>
+      <div class="profile-tags">
+        <span class="profile-tag">2 mutual connections</span>
+        <span class="profile-tag">Also here for work</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="profile-card">
+    <div class="profile-avatar">M</div>
+    <div class="profile-info">
+      <div class="profile-name">Maya</div>
+      <div class="profile-bio">Checking out food spots and going out this weekend.</div>
+      <div class="profile-tags">
+        <span class="profile-tag">Shares your interests</span>
+        <span class="profile-tag">Also traveling solo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="profile-card">
+    <div class="profile-avatar">J</div>
+    <div class="profile-info">
+      <div class="profile-name">James</div>
+      <div class="profile-bio">In town for events and founder meetups.</div>
+      <div class="profile-tags">
+        <span class="profile-tag">Works in a similar space</span>
+        <span class="profile-tag">Attending similar plans</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="revealed-cta-block">
+    <p class="revealed-note">"This is what TyGO helps you see before the moment passes."</p>
+    <button class="btn-primary" onclick="clickContinueFromMatches()">Continue →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     SCREEN 6 — THANK YOU
+════════════════════════════════════════ -->
+<div id="screen-thankyou" class="screen">
+  <div class="ty-icon">🙌</div>
+  <h2 class="ty-title">Thanks for helping shape TyGO.</h2>
+  <p class="ty-sub">Your input helps us understand how people actually want to connect before they miss the moment.</p>
+  <p class="ty-note">We'll keep you posted.</p>
+  <button class="btn-primary" style="max-width:280px;opacity:1;animation:none;" onclick="handleBackToStart()">Back to start</button>
+</div>
+
+<script>
+  // ── POSTHOG ──────────────────────────────────────────────────────
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_mGgmhkDP9rLPEgy4g7cA9bEiSJzegYhUNX4PpdQi8UHT', { api_host: 'https://app.posthog.com' });
+
+  // ── STATE ─────────────────────────────────────────────────────────
+  let selectedVibe = null;
+
+  // ── CORE ──────────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── SCREEN 1 → 2 ─────────────────────────────────────────────────
+  function clickCheckOverlap() {
+    posthog.capture('clicked_check_overlap');
+    showScreen('results');
+  }
+
+  // ── SCREEN 2 → 3 ─────────────────────────────────────────────────
+  function clickSeeRelevant() {
+    posthog.capture('clicked_see_relevant');
+    showScreen('input');
+  }
+
+  // ── INPUT helpers ─────────────────────────────────────────────────
+  function toggleVibe(btn) {
+    document.querySelectorAll('.vibe-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedVibe = btn.dataset.vibe;
+  }
+
+  // ── SCREEN 3 → 4 ─────────────────────────────────────────────────
+  function submitInput() {
+    const city = document.getElementById('v3-city').value.trim() || 'Miami';
+    posthog.capture('completed_input', { city, vibe: selectedVibe });
+    showScreen('gate');
+  }
+
+  // ── SCREEN 4 → 5 ─────────────────────────────────────────────────
+  function clickAcceptVisibility() {
+    posthog.capture('accepted_visibility');
+    posthog.capture('viewed_revealed_matches');
+    showScreen('revealed');
+  }
+
+  function clickDeclineVisibility() {
+    posthog.capture('declined_visibility');
+    posthog.capture('viewed_revealed_matches');
+    showScreen('revealed');
+  }
+
+  // ── SCREEN 5 → 6 ─────────────────────────────────────────────────
+  function clickContinueFromMatches() {
+    posthog.capture('clicked_continue_from_matches');
+    posthog.capture('completed_v3_flow');
+    showScreen('thankyou');
+  }
+
+  // ── SCREEN 6 → 1 ─────────────────────────────────────────────────
+  function handleBackToStart() {
+    posthog.capture('clicked_back_to_start');
+    // Reset state
+    selectedVibe = null;
+    document.getElementById('v3-city').value = '';
+    document.querySelectorAll('.vibe-btn').forEach(b => b.classList.remove('selected'));
+    showScreen('landing');
+  }
+</script>
+</body>
+</html>
