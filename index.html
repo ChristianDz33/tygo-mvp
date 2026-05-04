@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TyGO — See who's here</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0D1B2A;
+    --navy2:  #0F2236;
+    --navy3:  #162840;
+    --teal:   #0D7A6E;
+    --teal-l: #0F9E8E;
+    --teal-g: #14C4B0;
+    --white:  #FFFFFF;
+    --gray:   #8899AA;
+    --gray-l: #C8D8E0;
+    --card:   #1A2E4A;
+    --card2:  #162236;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-rings {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .bg-rings::before, .bg-rings::after {
+    content: ''; position: absolute; border-radius: 50%;
+    border: 1px solid rgba(13,122,110,0.15);
+  }
+  .bg-rings::before { width: 700px; height: 700px; top: -200px; right: -200px; }
+  .bg-rings::after  { width: 500px; height: 500px; bottom: -150px; left: -150px; }
+  .glow {
+    position: fixed; width: 700px; height: 700px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(13,122,110,0.15) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none; position: relative; z-index: 1;
+    min-height: 100vh; padding: 0 20px 60px;
+    animation: fadeUp 0.45s ease;
+  }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.35; transform: scale(0.65); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── SHARED ── */
+  .screen-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--teal-l);
+    letter-spacing: 1px; padding-top: 36px; margin-bottom: 0;
+    align-self: flex-start;
+  }
+  .max-w {
+    width: 100%; max-width: 520px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .eyebrow {
+    font-size: 11px; letter-spacing: 2.5px;
+    color: var(--teal-g); font-weight: 600; text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(26px, 5vw, 34px);
+    color: var(--white); line-height: 1.2; text-align: center;
+  }
+  .section-title em { font-style: italic; color: var(--teal-g); }
+  .section-sub {
+    font-size: 15px; color: var(--gray-l); line-height: 1.6;
+    text-align: center; max-width: 400px;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    background: var(--teal); color: var(--white);
+    border: none; padding: 16px 32px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.4px; width: 100%;
+    transition: all 0.2s ease;
+  }
+  .btn-primary:hover {
+    background: var(--teal-l); transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(13,122,110,0.4);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--gray);
+    border: 1.5px solid rgba(136,153,170,0.25);
+    padding: 15px 32px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    cursor: pointer; width: 100%; transition: all 0.2s;
+  }
+  .btn-ghost:hover { color: var(--gray-l); border-color: rgba(136,153,170,0.5); }
+  .btn-back {
+    background: transparent; color: var(--gray); border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    cursor: pointer; padding: 6px 0;
+    display: flex; align-items: center; gap: 5px; transition: color 0.2s;
+  }
+  .btn-back:hover { color: var(--white); }
+
+  /* Pills / chips */
+  .chip-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    width: 100%; justify-content: center;
+  }
+  .chip {
+    background: var(--card2); border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 50px; padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--gray-l); cursor: pointer; transition: all 0.18s;
+  }
+  .chip:hover { border-color: var(--teal); color: var(--white); }
+  .chip.selected {
+    background: rgba(13,122,110,0.2);
+    border-color: var(--teal-g); color: var(--teal-g);
+  }
+
+  /* Binary choice */
+  .binary-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
+  }
+  .binary-btn {
+    background: var(--card2); border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 14px; padding: 16px 12px; text-align: center;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    color: var(--gray-l); cursor: pointer; transition: all 0.18s;
+  }
+  .binary-btn:hover { border-color: var(--teal); color: var(--white); }
+  .binary-btn.selected {
+    background: rgba(13,122,110,0.2);
+    border-color: var(--teal-g); color: var(--teal-g);
+  }
+  .binary-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Form */
+  .form-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+    color: var(--teal-g); text-transform: uppercase; align-self: flex-start;
+  }
+  .form-input {
+    background: var(--card); border: 1.5px solid rgba(13,122,110,0.3);
+    border-radius: 12px; padding: 15px 20px;
+    color: var(--white); font-family: 'DM Sans', sans-serif;
+    font-size: 16px; outline: none; width: 100%; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--teal-l); }
+  .form-input::placeholder { color: var(--gray); }
+
+  /* ════ SCREEN 1: LANDING ════ */
+  #screen-landing {
+    justify-content: center; text-align: center;
+  }
+  .landing-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(13,122,110,0.15); border: 1px solid rgba(20,196,176,0.3);
+    border-radius: 50px; padding: 8px 18px; margin-bottom: 36px;
+    font-size: 12px; font-weight: 600; color: var(--teal-g);
+    letter-spacing: 0.5px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.1s forwards;
+  }
+  .landing-badge span {
+    width: 6px; height: 6px; background: var(--teal-g); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  .landing-logo {
+    font-family: 'DM Serif Display', serif; font-size: 32px;
+    color: var(--teal-l); letter-spacing: 2px; margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.2s forwards;
+  }
+  .landing-headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(30px, 6vw, 52px); font-weight: 400;
+    line-height: 1.1; color: var(--white);
+    max-width: 580px; margin-bottom: 18px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.3s forwards;
+  }
+  .landing-sub {
+    font-size: 16px; color: var(--gray-l); max-width: 440px;
+    line-height: 1.65; margin-bottom: 44px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.45s forwards;
+  }
+  .landing-cta {
+    max-width: 340px; width: 100%; margin-bottom: 20px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.6s forwards;
+  }
+  .landing-trust {
+    font-size: 12px; color: var(--gray); letter-spacing: 0.5px;
+    opacity: 0; animation: fadeUp 0.5s ease 0.75s forwards;
+  }
+  .landing-trust span {
+    color: var(--teal-g); margin-right: 5px;
+  }
+
+  /* ════ SCREEN 2: INTAKE ════ */
+  #screen-intake {
+    padding-top: 28px; gap: 32px; max-width: 520px; margin: 0 auto; width: 100%;
+  }
+  .intake-header { text-align: center; display: flex; flex-direction: column; gap: 10px; }
+  .question-block { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .question-label {
+    font-size: 15px; font-weight: 600; color: var(--white);
+  }
+  .question-sub { font-size: 13px; color: var(--gray); }
+  .optional-tag {
+    font-size: 11px; color: var(--gray); font-style: italic; margin-left: 6px;
+  }
+  .intake-cta { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ════ SCREEN 3: LOADING ════ */
+  #screen-loading {
+    justify-content: center; text-align: center; gap: 32px;
+    max-width: 400px; margin: 0 auto;
+  }
+  .loader-ring {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 3px solid rgba(13,122,110,0.2);
+    border-top-color: var(--teal-g);
+    animation: spin 1s linear infinite;
+  }
+  .loader-headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--white); line-height: 1.3;
+  }
+  .loader-line {
+    font-size: 14px; color: var(--teal-g); min-height: 20px;
+    transition: opacity 0.4s ease;
+  }
+  .loader-dots { display: flex; gap: 8px; justify-content: center; }
+  .loader-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal-g); opacity: 0.3;
+    animation: pulse 1.2s ease infinite;
+  }
+  .loader-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loader-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  /* ════ SCREEN 4: REVEAL ════ */
+  #screen-reveal {
+    padding-top: 28px; gap: 20px; max-width: 520px; margin: 0 auto; width: 100%;
+    padding-bottom: 60px;
+  }
+  .reveal-header { text-align: center; display: flex; flex-direction: column; gap: 10px; }
+  .reveal-count {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(24px, 5vw, 32px); color: var(--white); line-height: 1.2;
+  }
+  .reveal-count em { font-style: italic; color: var(--teal-g); }
+
+  /* Profile cards */
+  .profile-card {
+    background: var(--card); border: 1.5px solid rgba(13,122,110,0.2);
+    border-radius: 18px; padding: 20px; width: 100%;
+    display: flex; gap: 16px; position: relative; overflow: hidden;
+    animation: slideUp 0.4s ease both;
+  }
+  .profile-card:nth-child(1) { animation-delay: 0.05s; }
+  .profile-card:nth-child(2) { animation-delay: 0.15s; }
+  .profile-card:nth-child(3) { animation-delay: 0.25s; }
+
+  /* blurred avatar */
+  .p-avatar {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal), var(--navy3));
+    filter: blur(6px); position: relative;
+  }
+  .p-avatar-lock {
+    position: absolute; top: 0; left: 0;
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .p-info { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .p-name-blur {
+    height: 14px; border-radius: 4px; width: 120px;
+    background: linear-gradient(90deg, var(--navy3) 25%, rgba(20,196,176,0.08) 50%, var(--navy3) 75%);
+    background-size: 200% auto;
+    animation: shimmer 2s linear infinite;
+  }
+  .p-role {
+    font-size: 14px; font-weight: 600; color: var(--white);
+  }
+  .p-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .p-tag {
+    font-size: 11px; font-weight: 600;
+    background: rgba(13,122,110,0.15); color: var(--teal-g);
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .p-tag.mutual { background: rgba(20,196,176,0.1); color: #6EDFD2; }
+
+  /* Revealed card variant */
+  .profile-card.revealed {
+    border-color: rgba(20,196,176,0.4);
+    background: linear-gradient(135deg, #1A2E4A, #162236);
+  }
+  .p-avatar-real {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal-g), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--white);
+  }
+
+  /* Gate */
+  .visibility-gate {
+    background: rgba(13,27,42,0.6); border: 1.5px solid rgba(20,196,176,0.2);
+    border-radius: 20px; padding: 28px 24px; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    text-align: center;
+  }
+  .gate-title {
+    font-family: 'DM Serif Display', serif; font-size: 22px;
+    color: var(--white); line-height: 1.25;
+  }
+  .gate-sub { font-size: 14px; color: var(--gray-l); line-height: 1.55; }
+  .gate-options { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .gate-option {
+    background: var(--card2); border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 14px; padding: 18px 20px; cursor: pointer;
+    text-align: left; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px;
+  }
+  .gate-option:hover { border-color: var(--teal-g); transform: translateY(-1px); }
+  .gate-option-label {
+    font-size: 15px; font-weight: 600; color: var(--white);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gate-option-sub { font-size: 13px; color: var(--gray); line-height: 1.4; }
+
+  /* ════ SCREEN 5: AFTER VISIBILITY (VISIBLE) ════ */
+  #screen-visible {
+    padding-top: 28px; gap: 22px; max-width: 520px; margin: 0 auto; width: 100%;
+    padding-bottom: 60px;
+  }
+  .visible-status {
+    background: rgba(13,122,110,0.15); border: 1px solid rgba(20,196,176,0.3);
+    border-radius: 50px; padding: 10px 20px; font-size: 13px; font-weight: 600;
+    color: var(--teal-g); display: inline-flex; align-items: center; gap: 8px;
+  }
+  .visible-dot {
+    width: 8px; height: 8px; background: var(--teal-g); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  /* ════ SCREEN 6: AFTER VISIBILITY (PRIVATE) ════ */
+  #screen-private {
+    padding-top: 28px; gap: 22px; max-width: 520px; margin: 0 auto; width: 100%;
+    padding-bottom: 60px;
+  }
+  .private-status {
+    background: rgba(136,153,170,0.08); border: 1px solid rgba(136,153,170,0.2);
+    border-radius: 50px; padding: 10px 20px; font-size: 13px; font-weight: 600;
+    color: var(--gray); display: inline-flex; align-items: center; gap: 8px;
+  }
+  .private-note {
+    font-size: 13px; color: var(--gray); line-height: 1.6; text-align: center;
+    max-width: 380px;
+  }
+
+  /* ════ EMAIL CAPTURE ════ */
+  .email-block {
+    background: rgba(13,122,110,0.08); border: 1.5px solid rgba(13,122,110,0.25);
+    border-radius: 18px; padding: 28px 22px; width: 100%;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .email-title {
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    color: var(--white); line-height: 1.3;
+  }
+  .email-sub { font-size: 13px; color: var(--gray-l); line-height: 1.5; }
+  .email-row { display: flex; gap: 8px; width: 100%; }
+  .email-input {
+    flex: 1; background: var(--navy2);
+    border: 1.5px solid rgba(13,122,110,0.3); border-radius: 10px;
+    padding: 13px 16px; color: var(--white);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .email-input:focus { border-color: var(--teal-l); }
+  .email-input::placeholder { color: var(--gray); }
+  .email-input.error { border-color: #E05555; }
+  .btn-notify {
+    background: var(--teal); color: var(--white);
+    border: none; padding: 13px 22px; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: background 0.2s; flex-shrink: 0;
+  }
+  .btn-notify:hover { background: var(--teal-l); }
+  .btn-notify.done { background: #1A6640; }
+  .success-msg {
+    font-size: 14px; color: var(--teal-g); display: none;
+    align-items: center; gap: 8px; line-height: 1.5;
+  }
+  .success-msg.show { display: flex; }
+
+  /* ── DENSITY LAYER ── */
+  .density-layer {
+    width: 100%; display: flex; flex-direction: column;
+    align-items: center; gap: 12px;
+  }
+  .mini-avatars {
+    display: flex; justify-content: center; position: relative;
+    height: 44px; width: 100%;
+  }
+  .mini-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid var(--navy);
+    filter: blur(3px);
+    position: absolute;
+    opacity: 0.55;
+  }
+  .density-label {
+    font-size: 12px; color: var(--gray); text-align: center;
+    letter-spacing: 0.3px; line-height: 1.5;
+  }
+  .unlock-counter {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(13,122,110,0.12); border: 1px solid rgba(20,196,176,0.2);
+    border-radius: 50px; padding: 8px 18px;
+    font-size: 13px; color: var(--teal-g); font-weight: 600;
+  }
+  .unlock-counter span { color: var(--gray-l); font-weight: 400; }
+</style>
+<body>
+
+<div class="bg-rings"></div>
+<div class="glow"></div>
+
+<!-- ════════════════════════════════
+     SCREEN 1 — LANDING
+════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="max-w" style="justify-content:center;min-height:100vh;text-align:center;gap:0;">
+    <div class="landing-badge"><span></span> POSSIBLE Miami 2025</div>
+    <div class="landing-logo">TyGO</div>
+    <h1 class="landing-headline">People in your network are in Miami right now. You just don't see them yet.</h1>
+    <p class="landing-sub">TyGO helps you uncover relevant friends-of-friends, industry peers, and mutual connections you may otherwise miss while traveling or attending events.</p>
+    <div class="landing-cta">
+      <button class="btn-primary" onclick="clickSeeWhosHere()">See who's here →</button>
+    </div>
+    <p class="landing-trust"><span>🔒</span> Private until you choose to be visible.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 2 — INTAKE
+════════════════════════════════ -->
+<div id="screen-intake" class="screen">
+  <div class="screen-logo">TyGO</div>
+  <div style="height:24px;"></div>
+
+  <div class="max-w" style="gap:32px;">
+    <div class="intake-header">
+      <div class="eyebrow">Quick check</div>
+      <h2 class="section-title" style="font-size:clamp(22px,4vw,28px);">Tell us where you're at</h2>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-block">
+      <div class="question-label">Are you in Miami this week?</div>
+      <div class="binary-row">
+        <button class="binary-btn" data-q="miami" data-v="yes" onclick="selectBinary(this)">Yes</button>
+        <button class="binary-btn" data-q="miami" data-v="no"  onclick="selectBinary(this)">No</button>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block">
+      <div class="question-label">Are you here for POSSIBLE?</div>
+      <div class="binary-row binary-3">
+        <button class="binary-btn" data-q="possible" data-v="yes"      onclick="selectBinary(this)">Yes</button>
+        <button class="binary-btn" data-q="possible" data-v="no"       onclick="selectBinary(this)">No</button>
+        <button class="binary-btn" data-q="possible" data-v="not_sure" onclick="selectBinary(this)">Not sure</button>
+      </div>
+    </div>
+
+    <!-- Q3 optional -->
+    <div class="question-block">
+      <div class="question-label">
+        What kind of people would be valuable to you right now?
+        <span class="optional-tag">optional</span>
+      </div>
+      <div class="chip-grid" id="interest-chips">
+        <button class="chip" data-interest="mutual_connections" onclick="toggleChip(this)">People I already have mutual connections with</button>
+        <button class="chip" data-interest="my_industry"        onclick="toggleChip(this)">People in my industry</button>
+        <button class="chip" data-interest="open_to_meeting"    onclick="toggleChip(this)">People open to meeting</button>
+        <button class="chip" data-interest="here_for_business"  onclick="toggleChip(this)">People here for business</button>
+        <button class="chip" data-interest="similar_to_me"      onclick="toggleChip(this)">People similar to me</button>
+      </div>
+      <input id="interest-other" class="form-input" type="text" placeholder="Something else…" style="margin-top:4px;" oninput="trackOtherInput(this)" />
+    </div>
+
+    <div class="intake-cta">
+      <button class="btn-primary" onclick="submitIntake()">Find my network →</button>
+      <button class="btn-back"    onclick="showScreen('landing')">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 3 — LOADING
+════════════════════════════════ -->
+<div id="screen-loading" class="screen">
+  <div class="loader-ring"></div>
+  <div class="loader-headline">Checking your extended network…</div>
+  <div class="loader-line" id="loader-line">Looking for mutual connections</div>
+  <div class="loader-dots">
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 4 — REVEAL (blurred)
+════════════════════════════════ -->
+<div id="screen-reveal" class="screen">
+  <div class="screen-logo">TyGO</div>
+  <div style="height:24px;"></div>
+
+  <div class="max-w" style="gap:18px;">
+    <div class="reveal-header">
+      <div class="eyebrow">Your network overlap</div>
+      <h2 class="reveal-count"><em>3 people</em> you'd likely find value in meeting are here.</h2>
+      <p style="font-size:14px;color:var(--teal-g);font-weight:600;margin-top:6px;">+12 more from your extended network nearby</p>
+      <p style="font-size:13px;color:var(--gray);margin-top:4px;line-height:1.5;">Based on your shared connections and activity in Miami this week.</p>
+    </div>
+
+    <!-- Card 1 -->
+    <div class="profile-card">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="p-avatar"></div>
+        <div class="p-avatar-lock">🔒</div>
+      </div>
+      <div class="p-info">
+        <div class="p-name-blur"></div>
+        <div class="p-role">Works in a similar space</div>
+        <div class="p-tags">
+          <span class="p-tag mutual">2 mutual connections</span>
+          <span class="p-tag">Also in Miami this week</span>
+          <span class="p-tag">Open to meeting</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="profile-card">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="p-avatar"></div>
+        <div class="p-avatar-lock">🔒</div>
+      </div>
+      <div class="p-info">
+        <div class="p-name-blur"></div>
+        <div class="p-role">Likely aligned with your interests</div>
+        <div class="p-tags">
+          <span class="p-tag mutual">1 mutual connection</span>
+          <span class="p-tag">Also in Miami this week</span>
+          <span class="p-tag">Here for similar reasons</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="profile-card">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="p-avatar"></div>
+        <div class="p-avatar-lock">🔒</div>
+      </div>
+      <div class="p-info">
+        <div class="p-name-blur"></div>
+        <div class="p-role">Connected through your extended network</div>
+        <div class="p-tags">
+          <span class="p-tag mutual">Extended network</span>
+          <span class="p-tag">Nearby this week</span>
+          <span class="p-tag">Similar plans</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Density layer: hidden avatar cluster -->
+    <div class="density-layer" id="density-layer">
+      <div class="mini-avatars" id="mini-avatars"></div>
+      <div class="density-label">More people are here. You'll unlock them once you're visible.</div>
+    </div>
+
+    <!-- Visibility gate -->
+    <div class="visibility-gate">
+      <div class="gate-title">To unlock the rest of your network, choose how visible you want to be.</div>
+      <div class="gate-sub">TyGO only surfaces you to relevant people. You're in control.</div>
+      <div class="gate-options">
+        <div class="gate-option" onclick="clickMakeVisible()">
+          <div class="gate-option-label">✅ Make me visible</div>
+          <div class="gate-option-sub">Let relevant people know you're here too.</div>
+        </div>
+        <div class="gate-option" onclick="clickStayPrivate()">
+          <div class="gate-option-label">🔒 Stay private</div>
+          <div class="gate-option-sub">Preview limited matches without showing yourself.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 5 — VISIBLE
+════════════════════════════════ -->
+<div id="screen-visible" class="screen">
+  <div class="screen-logo">TyGO</div>
+  <div style="height:24px;"></div>
+
+  <div class="max-w" style="gap:20px;">
+    <div class="visible-status">
+      <div class="visible-dot"></div>
+      You're visible to relevant overlaps
+    </div>
+
+    <div class="reveal-header">
+      <h2 class="section-title" style="font-size:clamp(22px,4vw,28px);">Here's one match to start.</h2>
+      <p class="section-sub">You now have access to more people in your network here.</p>
+    </div>
+
+    <!-- Revealed card -->
+    <div class="profile-card revealed">
+      <div class="p-avatar-real">A</div>
+      <div class="p-info">
+        <div class="p-role" style="font-size:16px;">Alex M.</div>
+        <div style="font-size:13px;color:var(--gray-l);margin:2px 0 8px;">Works in a similar space</div>
+        <div class="p-tags">
+          <span class="p-tag mutual">2 mutual connections</span>
+          <span class="p-tag">Also in Miami this week</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="unlock-counter">+11 more <span>unlocked soon</span></div>
+
+    <!-- Email capture -->
+    <div class="email-block">
+      <div class="email-title">Get notified when more people appear.</div>
+      <div class="email-sub">TyGO will alert you as more relevant people check in around you.</div>
+      <div class="email-row">
+        <input id="email-visible" class="email-input" type="email" placeholder="your@email.com" />
+        <button class="btn-notify" id="btn-notify-visible" onclick="submitEmail('visible')">Notify me</button>
+      </div>
+      <div class="success-msg" id="success-visible">
+        <span>✓</span> You're on the list. TyGO will help make the right people less random.
+      </div>
+    </div>
+
+    <button class="btn-back" onclick="showScreen('reveal')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 6 — PRIVATE
+════════════════════════════════ -->
+<div id="screen-private" class="screen">
+  <div class="screen-logo">TyGO</div>
+  <div style="height:24px;"></div>
+
+  <div class="max-w" style="gap:20px;">
+    <div class="private-status">🔒 You're staying private</div>
+
+    <div class="reveal-header">
+      <h2 class="section-title" style="font-size:clamp(22px,4vw,28px);">Your preview</h2>
+      <p class="section-sub">People won't be able to discover you, but you can still see limited overlap.</p>
+    </div>
+
+    <!-- All blurred -->
+    <div class="profile-card" style="opacity:0.6;">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="p-avatar"></div>
+        <div class="p-avatar-lock">🔒</div>
+      </div>
+      <div class="p-info">
+        <div class="p-name-blur"></div>
+        <div class="p-role">Works in a similar space</div>
+        <div class="p-tags">
+          <span class="p-tag mutual">2 mutual connections</span>
+          <span class="p-tag">Also in Miami this week</span>
+        </div>
+      </div>
+    </div>
+    <div class="profile-card" style="opacity:0.4;">
+      <div style="position:relative;flex-shrink:0;">
+        <div class="p-avatar"></div>
+        <div class="p-avatar-lock">🔒</div>
+      </div>
+      <div class="p-info">
+        <div class="p-name-blur"></div>
+        <div class="p-role">Likely aligned with your interests</div>
+        <div class="p-tags"><span class="p-tag">Turn on visibility to unlock</span></div>
+      </div>
+    </div>
+
+    <p class="private-note">You're only seeing a limited preview. More becomes visible once you're discoverable.</p>
+
+    <!-- Email capture -->
+    <div class="email-block">
+      <div class="email-title">Want to know when more relevant people show up?</div>
+      <div class="email-sub">We'll notify you privately. No one will know you checked.</div>
+      <div class="email-row">
+        <input id="email-private" class="email-input" type="email" placeholder="your@email.com" />
+        <button class="btn-notify" id="btn-notify-private" onclick="submitEmail('private')">Notify me</button>
+      </div>
+      <div class="success-msg" id="success-private">
+        <span>✓</span> You're on the list. TyGO will help make the right people less random.
+      </div>
+    </div>
+
+    <button class="btn-back" onclick="showScreen('reveal')">← Back</button>
+  </div>
+</div>
+
+<script>
+// ── POSTHOG ──────────────────────────────────────────────────────────────
+!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]);t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+posthog.init('phc_mGgmhkDP9rLPEgy4g7cA9bEiSJzegYhUNX4PpdQi8UHT', { api_host: 'https://app.posthog.com' });
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+const state = {
+  miamiStatus:    null,
+  possibleStatus: null,
+  interests:      [],
+  visibilityChoice: null,
+  emailSubmitted: false,
+};
+
+const ts = () => new Date().toISOString();
+
+// ── CORE ──────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function eventProps(extra = {}) {
+  return {
+    selected_city_status:      state.miamiStatus,
+    attending_possible_status: state.possibleStatus,
+    selected_interests:        state.interests,
+    visibility_choice:         state.visibilityChoice,
+    email_submitted:           state.emailSubmitted,
+    timestamp:                 ts(),
+    ...extra,
+  };
+}
+
+// ── SCREEN 1: LANDING ────────────────────────────────────────────────────
+posthog.capture('landing_viewed', eventProps());
+console.log('[TyGO] landing_viewed');
+
+function clickSeeWhosHere() {
+  posthog.capture('see_whos_here_clicked', eventProps());
+  console.log('[TyGO] see_whos_here_clicked');
+  posthog.capture('intake_started', eventProps());
+  console.log('[TyGO] intake_started');
+  showScreen('intake');
+}
+
+// ── SCREEN 2: INTAKE ─────────────────────────────────────────────────────
+function selectBinary(btn) {
+  const q = btn.dataset.q;
+  const v = btn.dataset.v;
+  document.querySelectorAll(`[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  if (q === 'miami') {
+    state.miamiStatus = v;
+    posthog.capture('miami_answer_selected', eventProps({ answer: v }));
+    console.log('[TyGO] miami_answer_selected:', v);
+  }
+  if (q === 'possible') {
+    state.possibleStatus = v;
+    posthog.capture('possible_answer_selected', eventProps({ answer: v }));
+    console.log('[TyGO] possible_answer_selected:', v);
+  }
+}
+
+function toggleChip(btn) {
+  btn.classList.toggle('selected');
+  const interest = btn.dataset.interest;
+  if (state.interests.includes(interest)) {
+    state.interests = state.interests.filter(i => i !== interest);
+  } else {
+    state.interests.push(interest);
+  }
+  posthog.capture('interest_chip_selected', eventProps({ chip: interest, selected: btn.classList.contains('selected') }));
+  console.log('[TyGO] interest_chip_selected:', interest);
+}
+
+let otherDebounce;
+function trackOtherInput(input) {
+  clearTimeout(otherDebounce);
+  otherDebounce = setTimeout(() => {
+    if (input.value.trim().length > 2) {
+      posthog.capture('interest_chip_selected', eventProps({ chip: 'other', other_value: input.value.trim(), selected: true }));
+      console.log('[TyGO] interest_other_typed:', input.value.trim());
+    }
+  }, 800);
+}
+
+function submitIntake() {
+  posthog.capture('network_scan_started', eventProps());
+  console.log('[TyGO] network_scan_started');
+  showScreen('loading');
+  startLoader();
+}
+
+// ── SCREEN 3: LOADER ─────────────────────────────────────────────────────
+const loaderLines = [
+  'Looking for mutual connections',
+  'Scanning event overlap',
+  'Finding people you may actually want to meet',
+];
+
+function startLoader() {
+  let i = 0;
+  const el = document.getElementById('loader-line');
+  el.textContent = loaderLines[0];
+
+  const interval = setInterval(() => {
+    i++;
+    if (i < loaderLines.length) {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.textContent = loaderLines[i];
+        el.style.opacity = '1';
+      }, 300);
+    } else {
+      clearInterval(interval);
+    }
+  }, 900);
+
+  setTimeout(() => {
+    posthog.capture('reveal_viewed', eventProps());
+    console.log('[TyGO] reveal_viewed');
+    posthog.capture('visibility_gate_viewed', eventProps());
+    console.log('[TyGO] visibility_gate_viewed');
+    showScreen('reveal');
+    buildDensityAvatars();
+    initDensityObserver();
+  }, 2800);
+}
+
+// ── DENSITY LAYER ────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  ['#0D7A6E','#162840'],['#14C4B0','#0D1B2A'],['#0F9E8E','#1A2E4A'],
+  ['#1A4A6A','#0F2236'],['#0A5A50','#0D1B2A'],['#126A5E','#162840'],
+  ['#0C8A7A','#1A2E4A'],['#14B0A0','#0D1B2A'],
+];
+const AVATAR_COUNT = 8;
+
+function buildDensityAvatars() {
+  const container = document.getElementById('mini-avatars');
+  if (!container) return;
+  const totalWidth = Math.min(window.innerWidth - 80, 440);
+  const step = Math.floor(totalWidth / (AVATAR_COUNT + 1));
+  const startX = (totalWidth - step * (AVATAR_COUNT - 1)) / 2;
+  AVATAR_COLORS.slice(0, AVATAR_COUNT).forEach((colors, i) => {
+    const el = document.createElement('div');
+    el.className = 'mini-avatar';
+    el.style.background = `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+    el.style.left = (startX + i * step) + 'px';
+    el.style.top = i % 2 === 0 ? '0px' : '4px';
+    el.style.opacity = String(0.4 + (i % 3) * 0.08);
+    container.appendChild(el);
+  });
+}
+
+function initDensityObserver() {
+  const el = document.getElementById('density-layer');
+  if (!el || !('IntersectionObserver' in window)) return;
+  let fired = false;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !fired) {
+        fired = true;
+        posthog.capture('density_layer_viewed', eventProps({
+          hidden_profiles_impression_count: AVATAR_COUNT,
+          density_copy_seen: true,
+        }));
+        console.log('[TyGO] density_layer_viewed, count:', AVATAR_COUNT);
+      }
+    });
+  }, { threshold: 0.5 });
+  obs.observe(el);
+}
+
+// ── SCREEN 4: VISIBILITY GATE ────────────────────────────────────────────
+function clickMakeVisible() {
+  state.visibilityChoice = 'visible';
+  posthog.capture('make_visible_clicked', eventProps());
+  console.log('[TyGO] make_visible_clicked');
+  posthog.capture('sample_profile_revealed', eventProps());
+  console.log('[TyGO] sample_profile_revealed');
+  showScreen('visible');
+}
+
+function clickStayPrivate() {
+  state.visibilityChoice = 'private';
+  posthog.capture('stay_private_clicked', eventProps());
+  console.log('[TyGO] stay_private_clicked');
+  showScreen('private');
+}
+
+// ── EMAIL CAPTURE ─────────────────────────────────────────────────────────
+function submitEmail(context) {
+  const input  = document.getElementById('email-' + context);
+  const btn    = document.getElementById('btn-notify-' + context);
+  const msg    = document.getElementById('success-' + context);
+  const email  = input.value.trim();
+
+  if (!email || !email.includes('@')) {
+    input.classList.add('error');
+    setTimeout(() => input.classList.remove('error'), 1500);
+    return;
+  }
+
+  state.emailSubmitted = true;
+  btn.textContent = '✓ Done';
+  btn.classList.add('done');
+  btn.disabled = true;
+  input.value = '';
+  msg.classList.add('show');
+
+  const evtName = context === 'private' ? 'notify_private_clicked' : 'notify_email_submitted';
+  posthog.capture(evtName, eventProps({ email_submitted: true, context }));
+  console.log('[TyGO]', evtName, { context });
+  posthog.capture('v4_completed', eventProps({ context }));
+  console.log('[TyGO] v4_completed');
+}
+</script>
+</body>
+</html>
